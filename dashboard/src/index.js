@@ -12,6 +12,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem("fundsroom_token");
+      localStorage.removeItem("fundsroom_user");
+      window.location.reload();
+    }
+    return Promise.reject(error);
+  }
+);
+
 const roles = ["ADMIN", "SALES", "WAREHOUSE", "ACCOUNTS"];
 
 function Login({ onLogin }) {
@@ -47,7 +59,7 @@ function Stat({ label, value, sub, alert }) { return <div className="stat"><span
 
 function DashboardPage() {
   const [summary, setSummary] = useState(null); const [challans, setChallans] = useState([]); const [products, setProducts] = useState([]);
-  useEffect(() => { Promise.all([api.get("/dashboard/summary"), api.get("/challans"), api.get("/products")]).then(([s,c,p]) => { setSummary(s.data.data); setChallans(c.data.data.slice(0,5)); setProducts(p.data.data.filter(x => x.currentStock <= x.minimumStock).slice(0,5)); }); }, []);
+  useEffect(() => { Promise.all([api.get("/dashboard/summary"), api.get("/challans"), api.get("/products")]).then(([s,c,p]) => { setSummary(s.data.data); setChallans(c.data.data.slice(0,5)); setProducts(p.data.data.filter(x => x.currentStock <= x.minimumStock).slice(0,5)); }).catch(err => console.error("Dashboard load failed:", err.message)); }, []);
   return <><div className="hero-row"><div><h3>Good to see you back 👋</h3><p>Monitor customers, stock and sales operations from one place.</p></div><span className="live-dot">● Live data</span></div>{summary && <div className="stats-grid"><Stat label="Customers" value={summary.customers} sub="CRM records"/><Stat label="Products" value={summary.products} sub="SKUs managed"/><Stat label="Pending Challans" value={summary.pendingChallans} sub="Awaiting confirmation"/><Stat label="Low Stock" value={summary.lowStock} sub="Needs attention" alert/></div>}<div className="two-col"><section className="panel"><div className="panel-head"><h3>Recent Challans</h3><span>Latest activity</span></div>{challans.map(c => <div className="list-row" key={c._id}><div><strong>{c.challanNumber}</strong><small>{c.customer?.businessName || c.customer?.name}</small></div><span className={`badge ${c.status.toLowerCase()}`}>{c.status}</span></div>)}{!challans.length && <Empty text="No challans yet"/>}</section><section className="panel"><div className="panel-head"><h3>Low Stock</h3><span>Reorder alerts</span></div>{products.map(p => <div className="list-row" key={p._id}><div><strong>{p.name}</strong><small>{p.sku}</small></div><span className="stock-alert">{p.currentStock} / {p.minimumStock}</span></div>)}{!products.length && <Empty text="All products are above minimum stock"/>}</section></div></>;
 }
 
