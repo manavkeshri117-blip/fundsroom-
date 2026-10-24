@@ -1,4 +1,4 @@
-# FundsRoom Mini ERP + CRM Operations Portal
+
 
 A transformed full-stack case-study project based on the existing JavaScript/Express/MongoDB learning codebase.
 
